@@ -45,6 +45,19 @@ pub struct BigMSF<'s, S> {
 }
 
 impl<'s, S: Source<'s>> BigMSF<'s, S> {
+    fn read_page_list(hdr: &Header, size: usize, buf: &mut ParseBuffer) -> Result<PageList> {
+        let pages = hdr.pages_needed_to_store(size);
+
+        let mut page_list = PageList::new(hdr.page_size);
+        for _ in 0..pages {
+            let n = buf.parse_u32()?;
+            page_list.push(hdr.validate_page_number(n as u32)?);
+        }
+        page_list.truncate(size);
+
+        Ok(page_list)
+    }
+
     pub fn new(source: S, header_view: Box<dyn SourceView<'_>>) -> Result<BigMSF<'s, S>> {
         let mut buf = ParseBuffer::from(header_view.as_slice());
         let header: RawHeader = buf.parse()?;
@@ -69,21 +82,8 @@ impl<'s, S: Source<'s>> BigMSF<'s, S> {
         let size_of_stream_table_in_pages =
             header_object.pages_needed_to_store(header.directory_size as usize);
 
-        // now: how many pages are needed to store the list of pages that store the stream table?
-        // each page entry is a u32, so multiply by four
-        let size_of_stream_table_page_list_in_pages =
-            header_object.pages_needed_to_store(size_of_stream_table_in_pages * 4);
-
-        // read the list of stream table page list pages, which immediately follow the header
-        // yes, this is a stupid level of indirection
-        let mut stream_table_page_list_page_list = PageList::new(header_object.page_size);
-        for _ in 0..size_of_stream_table_page_list_in_pages {
-            let n = buf.parse_u32()?;
-            stream_table_page_list_page_list.push(header_object.validate_page_number(n)?);
-        }
-
-        // truncate the stream table location location to the correct size
-        stream_table_page_list_page_list.truncate(size_of_stream_table_in_pages * 4);
+        let stream_table_page_list_page_list =
+            Self::read_page_list(&header_object, size_of_stream_table_in_pages * 4, &mut buf)?;
 
         Ok(BigMSF {
             header: header_object,

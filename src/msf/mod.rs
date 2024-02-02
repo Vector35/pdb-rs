@@ -138,7 +138,10 @@ pub fn open_msf<'s, S: Source<'s> + 's>(mut source: S) -> Result<Box<dyn Msf<'s,
         return Ok(Box::new(bigmsf));
     }
 
+
+    // see if it's a SmallMSF
     if header_matches(header_view.as_slice(), small::MAGIC) {
+        // claimed!
         let smallmsf = small::SmallMSF::new(source, header_view)?;
         return Ok(Box::new(smallmsf));
     }
