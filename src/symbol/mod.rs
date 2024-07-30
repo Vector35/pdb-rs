@@ -2392,6 +2392,7 @@ mod tests {
                     type_index: TypeIndex(8824),
                     register: Register(18),
                     name: "this".into(),
+                    slot: None
                 })
             );
         }
@@ -2444,6 +2445,7 @@ mod tests {
                     type_index: TypeIndex(0x1030),
                     register: Register(22),
                     name: "maximum_count".into(),
+                    slot: None
                 })
             );
         }
@@ -2896,6 +2898,7 @@ mod tests {
                         isenreg_stat: false,
                     },
                     name: "this".into(),
+                    slot: None
                 })
             );
         }
